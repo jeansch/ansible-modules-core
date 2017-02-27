@@ -13,6 +13,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'committer',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: ec2_asg
@@ -53,6 +57,12 @@ options:
     description:
       - Maximum number of instances in group, if unspecified then the current group value will be used.
     required: false
+  placement_group:
+    description:
+      - Physical location of your cluster placement group created in Amazon EC2.
+    required: false
+    version_added: "2.3"
+    default: None
   desired_capacity:
     description:
       - Desired number of instances in group, if unspecified then the current group value will be used.
@@ -77,7 +87,7 @@ options:
     default: None
   lc_check:
     description:
-      - Check to make sure instances that are being replaced with replace_instances do not aready have the current launch_config.
+      - Check to make sure instances that are being replaced with replace_instances do not already have the current launch_config.
     required: false
     version_added: "1.8"
     default: True
@@ -113,7 +123,7 @@ options:
     version_added: "2.0"
   wait_timeout:
     description:
-      - how long before wait instances to become viable when replaced.  Used in concjunction with instance_ids option.
+      - how long before wait instances to become viable when replaced.  Used in conjunction with instance_ids option.
     default: 300
     version_added: "1.8"
   wait_for_instances:
@@ -125,7 +135,7 @@ options:
   termination_policies:
     description:
         - An ordered list of criteria used for selecting instances to be removed from the Auto Scaling group when reducing capacity.
-        - For 'Default', when used to create a new autoscaling group, the "Default" value is used. When used to change an existent autoscaling group, the current termination policies are mantained
+        - For 'Default', when used to create a new autoscaling group, the "Default"i value is used. When used to change an existent autoscaling group, the current termination policies are maintained.
     required: false
     default: Default
     choices: ['OldestInstance', 'NewestInstance', 'OldestLaunchConfiguration', 'ClosestToNextInstanceHour', 'Default']
@@ -142,6 +152,13 @@ options:
     default: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR', 'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']
     required: false
     version_added: "2.2"
+  suspend_processes:
+    description:
+      - A list of scaling processes to suspend.
+    required: False
+    default: []
+    choices: ['Launch', 'Terminate', 'HealthCheck', 'ReplaceUnhealthy', 'AZRebalance', 'AlarmNotification', 'ScheduledActions', 'AddToLoadBalancer']
+    version_added: "2.3"
 extends_documentation_fragment:
     - aws
     - ec2
@@ -369,7 +386,7 @@ def wait_for_elb(asg_connection, module, group_name):
     as_group = asg_connection.get_all_groups(names=[group_name])[0]
 
     if as_group.load_balancers and as_group.health_check_type == 'ELB':
-        log.debug("Waiting for ELB to consider intances healthy.")
+        log.debug("Waiting for ELB to consider instances healthy.")
         try:
             elb_connection = connect_to_aws(boto.ec2.elb, region, **aws_connect_params)
         except boto.exception.NoAuthHandlerFound as e:
@@ -387,6 +404,28 @@ def wait_for_elb(asg_connection, module, group_name):
             module.fail_json(msg = "Waited too long for ELB instances to be healthy. %s" % time.asctime())
         log.debug("Waiting complete.  ELB thinks {0} instances are healthy.".format(healthy_instances))
 
+
+def suspend_processes(as_group, module):
+    suspend_processes = set(module.params.get('suspend_processes'))
+
+    try:
+        suspended_processes = set([p.process_name for p in as_group.suspended_processes])
+    except AttributeError:
+        # New ASG being created, no suspended_processes defined yet
+        suspended_processes = set()
+
+    if suspend_processes == suspended_processes:
+        return False
+
+    resume_processes = list(suspended_processes - suspend_processes)
+    if resume_processes:
+        as_group.resume_processes(resume_processes)
+
+    if suspend_processes:
+        as_group.suspend_processes(list(suspend_processes))
+
+    return True
+
 def create_autoscaling_group(connection, module):
     group_name = module.params.get('name')
     load_balancers = module.params['load_balancers']
@@ -394,6 +433,7 @@ def create_autoscaling_group(connection, module):
     launch_config_name = module.params.get('launch_config_name')
     min_size = module.params['min_size']
     max_size = module.params['max_size']
+    placement_group = module.params.get('placement_group')
     desired_capacity = module.params.get('desired_capacity')
     vpc_zone_identifier = module.params.get('vpc_zone_identifier')
     set_tags = module.params.get('tags')
@@ -430,6 +470,8 @@ def create_autoscaling_group(connection, module):
             availability_zones = module.params['availability_zones'] = [zone.name for zone in ec2_connection.get_all_zones()]
         enforce_required_arguments(module)
         launch_configs = connection.get_all_launch_configurations(names=[launch_config_name])
+        if len(launch_configs) == 0:
+            module.fail_json(msg="No launch config found with name %s" % launch_config_name)
         ag = AutoScalingGroup(
                  group_name=group_name,
                  load_balancers=load_balancers,
@@ -437,6 +479,7 @@ def create_autoscaling_group(connection, module):
                  launch_config=launch_configs[0],
                  min_size=min_size,
                  max_size=max_size,
+                 placement_group=placement_group,
                  desired_capacity=desired_capacity,
                  vpc_zone_identifier=vpc_zone_identifier,
                  connection=connection,
@@ -448,6 +491,7 @@ def create_autoscaling_group(connection, module):
 
         try:
             connection.create_auto_scaling_group(ag)
+            suspend_processes(ag, module)
             if wait_for_instances:
                 wait_for_new_inst(module, connection, group_name, wait_timeout, desired_capacity, 'viable_instances')
                 wait_for_elb(connection, module, group_name)
@@ -464,6 +508,10 @@ def create_autoscaling_group(connection, module):
     else:
         as_group = as_groups[0]
         changed = False
+
+        if suspend_processes(as_group, module):
+            changed = True
+
         for attr in ASG_ATTRIBUTES:
             if module.params.get(attr, None) is not None:
                 module_attr = module.params.get(attr)
@@ -596,6 +644,14 @@ def replace(connection, module):
     instances = props['instances']
     if replace_instances:
         instances = replace_instances
+        
+    #check if min_size/max_size/desired capacity have been specified and if not use ASG values
+    if min_size is None:
+        min_size = as_group.min_size
+    if max_size is None:
+        max_size = as_group.max_size
+    if desired_capacity is None:
+        desired_capacity = as_group.desired_capacity
     # check to see if instances are replaceable if checking launch configs
 
     new_instances, old_instances = get_instances_by_lc(props, lc_check, instances)
@@ -618,16 +674,9 @@ def replace(connection, module):
     if not old_instances:
         changed = False
         return(changed, props)
-
-    #check if min_size/max_size/desired capacity have been specified and if not use ASG values
-    if min_size is None:
-        min_size = as_group.min_size
-    if max_size is None:
-        max_size = as_group.max_size
-    if desired_capacity is None:
-        desired_capacity = as_group.desired_capacity
+      
     # set temporary settings and wait for them to be reached
-    # This should get overriden if the number of instances left is less than the batch size.
+    # This should get overwritten if the number of instances left is less than the batch size.
 
     as_group = connection.get_all_groups(names=[group_name])[0]
     update_size(as_group, max_size + batch_size, min_size + batch_size, desired_capacity + batch_size)
@@ -816,6 +865,7 @@ def main():
             launch_config_name=dict(type='str'),
             min_size=dict(type='int'),
             max_size=dict(type='int'),
+            placement_group=dict(type='str'),
             desired_capacity=dict(type='int'),
             vpc_zone_identifier=dict(type='list'),
             replace_batch_size=dict(type='int', default=1),
@@ -836,7 +886,8 @@ def main():
                 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
                 'autoscaling:EC2_INSTANCE_TERMINATE',
                 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
-            ])
+            ]),
+            suspend_processes=dict(type='list', default=[])
         ),
     )
 

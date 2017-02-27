@@ -15,11 +15,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['deprecated'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
+
 DOCUMENTATION = """
 ---
 module: iosxr_template
 version_added: "2.1"
-author: "Peter sprygada (@privateip)"
+author: "Peter Sprygada (@privateip)"
 short_description: Manage Cisco IOSXR device configurations over SSH
 description:
   - Manages network device configurations over SSH.  This module
@@ -28,7 +33,7 @@ description:
     by evaluating the current running-config and only pushing configuration
     commands that are not already configured.  The config source can
     be a set of commands or a template.
-deprecated: Deprecated in 2.2. Use eos_config instead
+deprecated: Deprecated in 2.2. Use iosxr_config instead
 extends_documentation_fragment: iosxr
 options:
   src:
@@ -97,7 +102,7 @@ updates:
 
 responses:
   description: The set of responses from issuing the commands on the device
-  retured: when not check_mode
+  returned: when not check_mode
   type: list
   sample: ['...', '...']
 """

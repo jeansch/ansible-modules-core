@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_acl
@@ -38,7 +42,7 @@ notes:
       If there is any difference, what is in Ansible will be pushed (configured
       options will be overridden).  This is to improve security, but at the
       same time remember an ACE is removed, then re-added, so if there is a
-      change, the new ACE will be exactly what paramaters you are sending to
+      change, the new ACE will be exactly what parameters you are sending to
       the module.
 options:
     seq:
@@ -640,7 +644,7 @@ def main():
             seq=dict(required=False, type='str'),
             name=dict(required=True, type='str'),
             action=dict(required=False, choices=['remark', 'permit', 'deny']),
-            remark=dict(requried=False, type='str'),
+            remark=dict(required=False, type='str'),
             proto=dict(required=False, type='str'),
             src=dict(required=False, type='str'),
             src_port_op=dict(required=False),

@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_evpn_vni
@@ -28,7 +32,7 @@ author: Gabriele Gerbino (@GGabriele)
 extends_documentation_fragment: nxos
 notes:
     - default, where supported, restores params default value.
-    - RD override is not permitted. You should set it to the defalt values
+    - RD override is not permitted. You should set it to the default values
       first and then reconfigure it.
     - C(route_target_both), C(route_target_import) and
       C(route_target_export valid) values are a list of extended communities,
@@ -126,14 +130,11 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
 from ansible.module_utils.shell import ShellError
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
+from ansible.module_utils.network import NetworkModule
 
 
 def to_list(val):

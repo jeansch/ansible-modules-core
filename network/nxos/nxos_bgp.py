@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_bgp
@@ -286,8 +290,8 @@ options:
 
 
 EXAMPLES = '''
-# configure a simple asn
-- nxos_bgp:
+- name: Configure a simple ASN
+  nxos_bgp:
       asn: 65535
       vrf: test
       router_id: 1.1.1.1
@@ -360,13 +364,11 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
+from ansible.module_utils.network import NetworkModule
+from ansible.module_utils.shell import ShellError
 
 
 def to_list(val):
@@ -759,7 +761,7 @@ def state_present(module, existing, proposed, candidate):
         elif value is False:
             commands.append('no {0}'.format(key))
         elif value == 'default':
-            if key in PARAM_TO_DEFAULT_KEYMAP.keys():
+            if key in PARAM_TO_DEFAULT_KEYMAP:
                 commands.append('{0} {1}'.format(key, PARAM_TO_DEFAULT_KEYMAP[key]))
             elif existing_commands.get(key):
                 existing_value = existing_commands.get(key)
@@ -951,7 +953,7 @@ def main():
     if module.params['vrf'] != 'default':
         for param, inserted_value in module.params.iteritems():
             if param in GLOBAL_PARAMS and inserted_value:
-                module.fail_json(msg='Global params can be modifed only'
+                module.fail_json(msg='Global params can be modified only'
                                      ' under "default" VRF.',
                                      vrf=module.params['vrf'],
                                      global_param=param)

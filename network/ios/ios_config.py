@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: ios_config
@@ -98,6 +102,15 @@ options:
     required: false
     default: line
     choices: ['line', 'block']
+  multiline_delimiter:
+    description:
+      - This arugment is used when pushing a multiline configuration
+        element to the IOS device.  It specifies the character to use
+        as the delimiting character.  This only applies to the
+        configuration action
+    required: false
+    default: "@"
+    version_added: "2.3"
   force:
     description:
       - The force argument instructs the module to not consider the
@@ -110,17 +123,6 @@ options:
     required: false
     default: false
     choices: ["true", "false"]
-  commit:
-    description:
-      - This argument specifies the update method to use when applying the
-        configuration changes to the remote node.  If the value is set to
-        I(merge) the configuration updates are merged with the running-
-        config.  If the value is set to I(check), no changes are made to
-        the remote host.
-    required: false
-    default: merge
-    choices: ['merge', 'check']
-    version_added: "2.2"
   backup:
     description:
       - This argument will cause the module to create a full backup of
@@ -134,7 +136,7 @@ options:
     version_added: "2.2"
   config:
     description:
-      - The C(config) argument allows the playbook desginer to supply
+      - The C(config) argument allows the playbook designer to supply
         the base configuration to be used to validate configuration
         changes necessary.  If this argument is provided, the module
         will not download the running-config from the remote node.
@@ -213,61 +215,103 @@ backup_path:
   sample: /playbooks/ansible/backup/ios_config.2016-07-16@22:28:34
 """
 import re
+import time
 
 from ansible.module_utils.basic import get_exception
+from ansible.module_utils.six  import iteritems
 from ansible.module_utils.ios import NetworkModule, NetworkError
 from ansible.module_utils.netcfg import NetworkConfig, dumps
 from ansible.module_utils.netcli import Command
 
+
 def check_args(module, warnings):
+    if module.params['multiline_delimiter']:
+        if len(module.params['multiline_delimiter']) != 1:
+            module.fail_json(msg='multiline_delimiter value can only be a '
+                                 'single character')
     if module.params['force']:
         warnings.append('The force argument is deprecated, please use '
                         'match=none instead.  This argument will be '
                         'removed in the future')
+
+def extract_banners(config):
+    banners = {}
+    banner_cmds = re.findall(r'^banner (\w+)', config, re.M)
+    for cmd in banner_cmds:
+        regex = r'banner %s \^C(.+?)(?=\^C)' % cmd
+        match = re.search(regex, config, re.S)
+        if match:
+            key = 'banner %s' % cmd
+            banners[key] = match.group(1).strip()
+
+    for cmd in banner_cmds:
+        regex = r'banner %s \^C(.+?)(?=\^C)' % cmd
+        match = re.search(regex, config, re.S)
+        if match:
+            config = config.replace(str(match.group(1)), '')
+
+    config = re.sub(r'banner \w+ \^C\^C', '!! banner removed', config)
+    return (config, banners)
+
+def diff_banners(want, have):
+    candidate = {}
+    for key, value in iteritems(want):
+        if value != have.get(key):
+            candidate[key] = value
+    return candidate
+
+def load_banners(module, banners):
+    delimiter = module.params['multiline_delimiter']
+    for key, value in iteritems(banners):
+        key += ' %s' % delimiter
+        for cmd in ['config terminal', key, value, delimiter, 'end']:
+            cmd += '\r'
+            module.connection.shell.shell.sendall(cmd)
+        time.sleep(1)
+        module.connection.shell.receive()
 
 def get_config(module, result):
     contents = module.params['config']
     if not contents:
         defaults = module.params['defaults']
         contents = module.config.get_config(include_defaults=defaults)
-    return NetworkConfig(indent=1, contents=contents)
+
+    contents, banners = extract_banners(contents)
+    return NetworkConfig(indent=1, contents=contents), banners
 
 def get_candidate(module):
     candidate = NetworkConfig(indent=1)
+    banners = {}
+
     if module.params['src']:
-        candidate.load(module.params['src'])
+        src, banners = extract_banners(module.params['src'])
+        candidate.load(src)
+
     elif module.params['lines']:
         parents = module.params['parents'] or list()
         candidate.add(module.params['lines'], parents=parents)
-    return candidate
 
-def load_backup(module):
-    try:
-        module.cli(['exit', 'config replace flash:/ansible-rollback force'])
-    except NetworkError:
-        module.fail_json(msg='unable to load backup configuration')
-
-def backup_config(module):
-    cmd = 'copy running-config flash:/ansible-rollback'
-    cmd = Command(cmd, prompt=re.compile('\? $'), response='\n')
-    module.cli(cmd)
+    return candidate, banners
 
 def run(module, result):
     match = module.params['match']
     replace = module.params['replace']
     path = module.params['parents']
 
-    candidate = get_candidate(module)
+    candidate, want_banners = get_candidate(module)
 
     if match != 'none':
-        config = get_config(module, result)
+        config, have_banners = get_config(module, result)
         path = module.params['parents']
         configobjs = candidate.difference(config, path=path,match=match,
                                           replace=replace)
     else:
         configobjs = candidate.items
+        have_banners = {}
 
-    if configobjs:
+    banners = diff_banners(want_banners, have_banners)
+
+    if configobjs or banners:
         commands = dumps(configobjs, 'commands').split('\n')
 
         if module.params['lines']:
@@ -277,21 +321,18 @@ def run(module, result):
             if module.params['after']:
                 commands.extend(module.params['after'])
 
-            result['updates'] = commands
-
-        # create a backup copy of the current running-config on
-        # device flash drive
-        backup_config(module)
+        result['updates'] = commands
+        result['banners'] = banners
 
         # send the configuration commands to the device and merge
         # them with the current running config
         if not module.check_mode:
-            module.config(commands)
-        result['changed'] = True
+            if commands:
+                module.config(commands)
+            if banners:
+                load_banners(module, banners)
 
-        # remove the backup copy of the running-config since its
-        # no longer needed
-        module.cli('delete /force flash:/ansible-rollback')
+        result['changed'] = True
 
     if module.params['save']:
         if not module.check_mode:
@@ -313,6 +354,7 @@ def main():
 
         match=dict(default='line', choices=['line', 'strict', 'exact', 'none']),
         replace=dict(default='line', choices=['line', 'block']),
+        multiline_delimiter=dict(default='@'),
 
         # this argument is deprecated in favor of setting match: none
         # it will be removed in a future version
@@ -351,10 +393,11 @@ def main():
     try:
         run(module, result)
     except NetworkError:
-        load_backup(module)
         exc = get_exception()
+        module.disconnect()
         module.fail_json(msg=str(exc))
 
+    module.disconnect()
     module.exit_json(**result)
 
 

@@ -21,6 +21,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: unarchive
@@ -114,13 +118,21 @@ notes:
 
 EXAMPLES = '''
 # Example from Ansible Playbooks
-- unarchive: src=foo.tgz dest=/var/lib/foo
+- unarchive:
+    src: foo.tgz
+    dest: /var/lib/foo
 
 # Unarchive a file that is already on the remote machine
-- unarchive: src=/tmp/foo.zip dest=/usr/local/bin remote_src=yes
+- unarchive:
+    src: /tmp/foo.zip
+    dest: /usr/local/bin
+    remote_src: yes
 
 # Unarchive a file that needs to be downloaded (added in 2.0)
-- unarchive: src=https://example.com/example.zip dest=/usr/local/bin remote_src=yes
+- unarchive:
+    src: "https://example.com/example.zip"
+    dest: /usr/local/bin
+    remote_src: yes
 '''
 
 import re
@@ -251,7 +263,7 @@ class ZipArchive(object):
             try:
                 for member in archive.namelist():
                     if member not in self.excludes:
-                        self._files_in_archive.append(member)
+                        self._files_in_archive.append(to_native(member))
             except:
                 archive.close()
                 raise UnarchiveError('Unable to list files in the archive')
@@ -339,7 +351,7 @@ class ZipArchive(object):
             # Check first and seventh field in order to skip header/footer
             if len(pcs[0]) != 7 and len(pcs[0]) != 10: continue
             if len(pcs[6]) != 15: continue
- 
+
             # Possible entries:
             #   -rw-rws---  1.9 unx    2802 t- defX 11-Aug-91 13:48 perms.2660
             #   -rw-a--     1.0 hpf    5358 Tl i4:3  4-Dec-91 11:33 longfilename.hpfs
@@ -623,7 +635,7 @@ class TgzArchive(object):
 #            filename = filename.decode('string_escape')
             filename = codecs.escape_decode(filename)[0]
             if filename and filename not in self.excludes:
-                self._files_in_archive.append(filename)
+                self._files_in_archive.append(to_native(filename))
         return self._files_in_archive
 
     def is_unarchived(self):
@@ -863,5 +875,7 @@ def main():
 # import module snippets
 from ansible.module_utils.basic import *
 from ansible.module_utils.urls import *
+from ansible.module_utils._text import to_native
+
 if __name__ == '__main__':
     main()

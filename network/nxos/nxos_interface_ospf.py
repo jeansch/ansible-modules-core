@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_interface_ospf
@@ -118,7 +122,7 @@ EXAMPLES = '''
     interface: ethernet1/32
     ospf: 1
     area: 1
-    cost=default
+    cost: default
     username: "{{ un }}"
     password: "{{ pwd }}"
     host: "{{ inventory_hostname }}"
@@ -166,14 +170,11 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
+from ansible.module_utils.network import NetworkModule
 from ansible.module_utils.shell import ShellError
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
 
 
 def to_list(val):

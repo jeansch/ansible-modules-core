@@ -19,6 +19,10 @@
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: apt
@@ -127,44 +131,70 @@ notes:
 '''
 
 EXAMPLES = '''
-# Update repositories cache and install "foo" package
-- apt: name=foo update_cache=yes
+- name: Update repositories cache and install "foo" package
+  apt:
+    name: foo
+    update_cache: yes
 
-# Remove "foo" package
-- apt: name=foo state=absent
+- name: Remove "foo" package
+  apt:
+    name: foo
+    state: absent
 
-# Install the package "foo"
-- apt: name=foo state=present
+- name: Install the package "foo"
+  apt:
+    name: foo
+    state: present
 
-# Install the version '1.00' of package "foo"
-- apt: name=foo=1.00 state=present
+- name: Install the version '1.00' of package "foo"
+  apt:
+    name: foo=1.00
+    state: present
 
-# Update the repository cache and update package "nginx" to latest version using default release squeeze-backport
-- apt: name=nginx state=latest default_release=squeeze-backports update_cache=yes
+- name: Update the repository cache and update package "nginx" to latest version using default release squeeze-backport
+  apt:
+    name: nginx
+    state: latest
+    default_release: squeeze-backports
+    update_cache: yes
 
-# Install latest version of "openjdk-6-jdk" ignoring "install-recommends"
-- apt: name=openjdk-6-jdk state=latest install_recommends=no
+- name: Install latest version of "openjdk-6-jdk" ignoring "install-recommends"
+  apt:
+    name: openjdk-6-jdk
+    state: latest
+    install_recommends: no
 
-# Update all packages to the latest version
-- apt: upgrade=dist
+- name: Update all packages to the latest version
+  apt:
+    upgrade: dist
 
-# Run the equivalent of "apt-get update" as a separate step
-- apt: update_cache=yes
+- name: Run the equivalent of "apt-get update" as a separate step
+  apt:
+    update_cache: yes
 
-# Only run "update_cache=yes" if the last one is more than 3600 seconds ago
-- apt: update_cache=yes cache_valid_time=3600
+- name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
 
-# Pass options to dpkg on run
-- apt: upgrade=dist update_cache=yes dpkg_options='force-confold,force-confdef'
+- name: Pass options to dpkg on run
+  apt:
+    upgrade: dist
+    update_cache: yes
+    dpkg_options: 'force-confold,force-confdef'
 
-# Install a .deb package
-- apt: deb=/tmp/mypackage.deb
+- name: Install a .deb package
+  apt:
+    deb: /tmp/mypackage.deb
 
-# Install the build dependencies for package "foo"
-- apt: pkg=foo state=build-dep
+- name: Install the build dependencies for package "foo"
+  apt:
+    pkg: foo
+    state: build-dep
 
-# Install a .deb package from the internet.
-- apt: deb=https://example.com/python-ppq_0.1-1_all.deb
+- name: Install a .deb package from the internet.
+  apt:
+    deb: https://example.com/python-ppq_0.1-1_all.deb
 '''
 
 RETURN = '''
@@ -190,18 +220,22 @@ stderr:
     sample: "AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 127.0.1.1. Set the 'ServerName' directive globally to ..."
 '''
 
-import traceback
 # added to stave off future warnings about apt api
 import warnings
 warnings.filterwarnings('ignore', "apt API not stable yet", FutureWarning)
 
-import os
 import datetime
 import fnmatch
 import itertools
+import os
+import re
 import sys
+import time
 
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.pycompat24 import get_exception
 from ansible.module_utils._text import to_native
+from ansible.module_utils.urls import fetch_url
 
 # APT related constants
 APT_ENV_VARS = dict(
@@ -266,8 +300,8 @@ def package_version_compare(version, other_version):
 def package_status(m, pkgname, version, cache, state):
     try:
         # get the package from the cache, as well as the
-        # the low-level apt_pkg.Package object which contains
-        # state fields not directly acccesible from the
+        # low-level apt_pkg.Package object which contains
+        # state fields not directly accessible from the
         # higher-level apt.package.Package object.
         pkg = cache[pkgname]
         ll_pkg = cache._cache[pkgname] # the low-level package object
@@ -366,16 +400,19 @@ def expand_pkgspec_from_fnmatches(m, pkgspec, cache):
         if frozenset('*?[]!').intersection(pkgname_pattern):
             # handle multiarch pkgnames, the idea is that "apt*" should
             # only select native packages. But "apt*:i386" should still work
-            if not ":" in pkgname_pattern:
+            if ":" not in pkgname_pattern:
+                # Filter the multiarch packages from the cache only once
                 try:
                     pkg_name_cache = _non_multiarch
                 except NameError:
-                    pkg_name_cache = _non_multiarch = [pkg.name for pkg in cache if not ':' in pkg.name]
+                    pkg_name_cache = _non_multiarch = [pkg.name for pkg in cache if ':' not in pkg.name]  # noqa: F841
             else:
+                # Create a cache of pkg_names including multiarch only once
                 try:
                     pkg_name_cache = _all_pkg_names
                 except NameError:
-                    pkg_name_cache = _all_pkg_names = [pkg.name for pkg in cache]
+                    pkg_name_cache = _all_pkg_names = [pkg.name for pkg in cache]  # noqa: F841
+
             matches = fnmatch.filter(pkg_name_cache, pkgname_pattern)
 
             if len(matches) == 0:
@@ -419,12 +456,13 @@ def install(m, pkgspec, cache, upgrade=False, default_release=None,
     packages = ""
     pkgspec = expand_pkgspec_from_fnmatches(m, pkgspec, cache)
     for package in pkgspec:
-        name, version = package_split(package)
-        installed, upgradable, has_files = package_status(m, name, version, cache, state='install')
         if build_dep:
             # Let apt decide what to install
             pkg_list.append("'%s'" % package)
             continue
+
+        name, version = package_split(package)
+        installed, upgradable, has_files = package_status(m, name, version, cache, state='install')
         if not installed or (upgrade and upgradable):
             pkg_list.append("'%s'" % package)
         if installed and upgradable and version:
@@ -721,6 +759,31 @@ def get_updated_cache_time():
     return mtimestamp, updated_cache_time
 
 
+# https://github.com/ansible/ansible-modules-core/issues/2951
+def get_cache(module):
+    '''Attempt to get the cache object and update till it works'''
+    cache = None
+    try:
+        cache = apt.Cache()
+    except SystemError:
+        e = get_exception()
+        if '/var/lib/apt/lists/' in str(e).lower():
+            # update cache until files are fixed or retries exceeded
+            retries = 0
+            while retries < 2:
+                (rc, so, se) = module.run_command(['apt-get', 'update', '-q'])
+                retries += 1
+                if rc == 0:
+                    break
+            if rc != 0:
+                module.fail_json(msg='Updating the cache to correct corrupt package lists failed:\n%s\n%s' % (str(e), str(so) + str(se)))    
+            # try again
+            cache = apt.Cache()
+        else:
+            module.fail_json(msg=str(e))
+    return cache
+ 
+
 def main():
     module = AnsibleModule(
         argument_spec = dict(
@@ -787,8 +850,10 @@ def main():
     if p['state'] == 'removed':
         p['state'] = 'absent'
 
+    # Get the cache object
+    cache = get_cache(module)
+
     try:
-        cache = apt.Cache()
         if p['default_release']:
             try:
                 apt_pkg.config['APT::Default-Release'] = p['default_release']
@@ -796,7 +861,6 @@ def main():
                 apt_pkg.Config['APT::Default-Release'] = p['default_release']
             # reopen cache w/ modified config
             cache.open(progress=None)
-
 
         mtimestamp, updated_cache_time = get_updated_cache_time()
         # Cache valid time is default 0, which will update the cache if
@@ -819,7 +883,7 @@ def main():
                 updated_cache = True
                 mtimestamp, updated_cache_time = get_updated_cache_time()
 
-            # If theres nothing else to do exit. This will set state as
+            # If there is nothing else to do exit. This will set state as
             #  changed based on if the cache was updated.
             if not p['package'] and not p['upgrade'] and not p['deb']:
                 module.exit_json(
@@ -878,12 +942,6 @@ def main():
             retvals['cache_updated'] = updated_cache
             # Store when the update time was last
             retvals['cache_update_time'] = updated_cache_time
-            # If the cache was updated and the general state change was set to
-            #  False make sure that the change in cache state is acurately
-            #  updated by setting the general changed state to the same as
-            #  the cache state.
-            if updated_cache and not retvals['changed']:
-                retvals['changed'] = updated_cache
 
             if success:
                 module.exit_json(**retvals)
@@ -897,9 +955,6 @@ def main():
     except apt.cache.FetchFailedException:
         module.fail_json(msg="Could not fetch updated apt files")
 
-# import module snippets
-from ansible.module_utils.basic import *
-from ansible.module_utils.urls import *
 
 if __name__ == "__main__":
     main()

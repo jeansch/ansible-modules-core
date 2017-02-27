@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: eos_command
@@ -88,7 +92,7 @@ vars:
     password: admin
     transport: cli
 
-- name: run show verion on remote devices
+- name: run show version on remote devices
   eos_command:
     commands: show version
     provider: "{{ cli }}"
@@ -106,7 +110,7 @@ vars:
       - show interfaces
     provider: "{{ cli }}"
 
-- name: run multiple commands and evalute the output
+- name: run multiple commands and evaluate the output
   eos_command:
     commands:
       - show version
@@ -139,7 +143,7 @@ stdout_lines:
 
 failed_conditions:
   description: the conditionals that failed
-  retured: failed
+  returned: failed
   type: list
   sample: ['...', '...']
 """

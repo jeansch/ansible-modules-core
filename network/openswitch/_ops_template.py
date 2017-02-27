@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['deprecated'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
+
 DOCUMENTATION = """
 ---
 module: ops_template
@@ -28,7 +33,7 @@ description:
     against a provided candidate configuration. If there are changes, the
     candidate configuration is merged with the current configuration and
     pushed into OpenSwitch
-deprecated: Deprecated in 2.2. Use eos_config instead
+deprecated: Deprecated in 2.2. Use ops_config instead
 extends_documentation_fragment: openswitch
 options:
   src:
@@ -87,11 +92,11 @@ EXAMPLES = """
 RETURN = """
 updates:
   description: The list of configuration updates to be merged
-  retured: always
+  returned: always
   type: dict
   sample: {obj, obj}
 responses:
-  desription: returns the responses when configuring using cli
+  description: returns the responses when configuring using cli
   returned: when transport == cli
   type: list
   sample: [...]

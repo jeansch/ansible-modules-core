@@ -16,15 +16,19 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: sros_rollback
 version_added: "2.2"
 author: "Peter Sprygada (@privateip)"
-short_description: Configure Nokia SROS rollback
+short_description: Configure Nokia SR OS rollback
 description:
   - Configure the rollback feature on remote Nokia devices running
-    the SROS operating system.  this module provides a stateful
+    the SR OS operating system.  this module provides a stateful
     implementation for managing the configuration of the rollback
     feature
 extends_documentation_fragment: sros
@@ -33,7 +37,7 @@ options:
     description:
       - The I(rollback_location) specifies the location and filename
         of the rollback checkpoint files.   This argument supports any
-        valid local or remote URL as specified in SROS
+        valid local or remote URL as specified in SR OS
     required: false
     default: null
   remote_max_checkpoints:
@@ -56,7 +60,7 @@ options:
     description:
       - The I(rescue_location) specifies the location of the
         rescue file.  This argument supports any valid local
-        or remote URL as specified in SROS
+        or remote URL as specified in SR OS
     required: false
     default: null
   state:
@@ -188,7 +192,7 @@ def main():
         rollback_location=dict(),
 
         local_max_checkpoints=dict(type='int'),
-        remote_max_checkpionts=dict(type='int'),
+        remote_max_checkpoints=dict(type='int'),
 
         rescue_location=dict(),
 

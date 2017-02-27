@@ -8,6 +8,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 author:
@@ -42,6 +46,11 @@ options:
       - Gives Ansible a hint if this is a 'static' include or not. If static it implies that it won't need templating nor loops nor conditionals and will show included tasks in the --list options.
     required: False
     default: None
+  allow_duplicates:
+    description:
+      - Overrides the role's metadata setting to allow using a role more than once with the same parameters.
+    required: False
+    default: True
   private:
     description:
       - If True the variables from defaults/ and vars/ in a role will not be made available to the rest of the play.
@@ -54,7 +63,8 @@ notes:
 '''
 
 EXAMPLES = """
-- include_role: name=myrole
+- include_role:
+    name: myrole
 
 - name: Run tasks/other.yml instead of 'main'
   include_role:
@@ -71,8 +81,8 @@ EXAMPLES = """
   include_role:
     name: myrole
   with_items:
-    - '{{roleinput1}}"
-    - '{{roleinput2}}"
+    - "{{roleinput1}}"
+    - "{{roleinput2}}"
   loop_control:
     loop_var: roleinputvar
 

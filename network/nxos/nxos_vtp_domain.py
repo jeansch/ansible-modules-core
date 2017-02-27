@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_vtp_domain
@@ -29,7 +33,7 @@ notes:
     - VTP feature must be active on the device to use this module.
     - This module is used to manage only VTP domain names.
     - VTP domain names are case-sensible.
-    - If it's never been configured before, VTP version is setted to 1 by default.
+    - If it's never been configured before, VTP version is set to 1 by default.
       Otherwise, it leaves the previous configured version untouched.
       Use M(nxos_vtp_version) to change it.
     - Use this in combination with M(nxos_vtp_password) and M(nxos_vtp_version)
@@ -45,9 +49,9 @@ EXAMPLES = '''
 # ENSURE VTP DOMAIN IS CONFIGURED
 - nxos_vtp_domain:
     domain: ntc
-    host: {{ inventory_hostname }}
-    username: {{ un }}
-    password: {{ pwd }}
+    host: "{{ inventory_hostname }}"
+    username: "{{ un }}"
+    password: "{{ pwd }}"
 '''
 
 

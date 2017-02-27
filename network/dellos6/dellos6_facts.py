@@ -19,6 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: dellos6_facts
@@ -36,10 +40,10 @@ options:
   gather_subset:
     description:
       - When supplied, this argument will restrict the facts collected
-        to a given subset.  Possible values for this argument inlcude
+        to a given subset.  Possible values for this argument include
         all, hardware, config, and interfaces.  Can specify a list of
         values to include a larger subset.  Values can also be used
-        with an initial M(!) to specify that a specific subset should
+        with an initial C(M(!)) to specify that a specific subset should
         not be collected.
     required: false
     default: '!config'

@@ -14,6 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'committer',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: ec2_elb_lb
@@ -135,7 +139,7 @@ options:
     version_added: "1.8"
   stickiness:
     description:
-      - An associative array of stickness policy settings. Policy will be applied to all listeners ( see example )
+      - An associative array of stickiness policy settings. Policy will be applied to all listeners ( see example )
     required: false
     version_added: "2.0"
   wait:
@@ -313,10 +317,10 @@ EXAMPLES = """
       - us-east-1d
     listeners:
       - protocol: http
-      - load_balancer_port: 80
-      - instance_port: 80
+        load_balancer_port: 80
+        instance_port: 80
 
-# Create an ELB with load balanacer stickiness enabled
+# Create an ELB with load balancer stickiness enabled
 - local_action:
     module: ec2_elb_lb
     name: "New ELB"
@@ -327,8 +331,8 @@ EXAMPLES = """
       - us-east-1d
     listeners:
       - protocol: http
-      - load_balancer_port: 80
-      - instance_port: 80
+        load_balancer_port: 80
+        instance_port: 80
     stickiness:
       type: loadbalancer
       enabled: yes
@@ -345,8 +349,8 @@ EXAMPLES = """
       - us-east-1d
     listeners:
       - protocol: http
-      - load_balancer_port: 80
-      - instance_port: 80
+        load_balancer_port: 80
+        instance_port: 80
     stickiness:
       type: application
       enabled: yes
@@ -363,8 +367,8 @@ EXAMPLES = """
       - us-east-1d
     listeners:
       - protocol: http
-      - load_balancer_port: 80
-      - instance_port: 80
+        load_balancer_port: 80
+        instance_port: 80
     tags:
       Name: "New ELB"
       stack: "production"
@@ -381,8 +385,8 @@ EXAMPLES = """
       - us-east-1d
     listeners:
       - protocol: http
-      - load_balancer_port: 80
-      - instance_port: 80
+        load_balancer_port: 80
+        instance_port: 80
     tags: {}
 """
 

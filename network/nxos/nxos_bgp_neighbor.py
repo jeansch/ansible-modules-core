@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_neighbor
@@ -244,13 +248,11 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
+from ansible.module_utils.network import NetworkModule
+from ansible.module_utils.shell import ShellError
 
 
 def to_list(val):

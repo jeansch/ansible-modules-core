@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_vxlan_vtep_vni
@@ -80,7 +84,7 @@ options:
         choices: ['present','absent']
     include_defaults:
         description:
-            - Specify to use or not the complete runnning configuration
+            - Specify to use or not the complete running configuration
               for module operations.
         required: false
         default: true

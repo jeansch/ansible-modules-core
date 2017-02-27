@@ -17,6 +17,10 @@
 #
 
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_hsrp
@@ -81,12 +85,33 @@ options:
 '''
 
 EXAMPLES = '''
-# ensure hsrp is configured with following params on a SVI
-- nxos_hsrp: group=10 vip=10.1.1.1 priority=150 interface=vlan10 preempt=enabled host=68.170.147.165
-# ensure hsrp is configured with following params on a SVI
-- nxos_hsrp: group=10 vip=10.1.1.1 priority=150 interface=vlan10 preempt=enabled host=68.170.147.165 auth_type=text auth_string=CISCO
-# removing hsrp config for given interface, group, and vip
-- nxos_hsrp: group=10 interface=vlan10 vip=10.1.1.1 host=68.170.147.165 state=absent
+- name: Ensure HSRP is configured with following params on a SVI
+  nxos_hsrp:
+    group: 10
+    vip: 10.1.1.1
+    priority: 150
+    interface: vlan10
+    preempt: enabled
+    host: 68.170.147.165
+
+- name: Ensure HSRP is configured with following params on a SVI
+  nxos_hsrp:
+    group: 10
+    vip: 10.1.1.1
+    priority: 150
+    interface: vlan10
+    preempt: enabled
+    host: 68.170.147.165
+    auth_type: text
+    auth_string: CISCO
+
+- name: Remove HSRP config for given interface, group, and VIP
+  nxos_hsrp:
+    group: 10
+    interface: vlan10
+    vip: 10.1.1.1
+    host: 68.170.147.165
+    state: absent
 '''
 
 RETURN = '''
@@ -118,20 +143,15 @@ changed:
     sample: true
 '''
 
-import collections
 import json
 
 # COMMON CODE FOR MIGRATION
-import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
 from ansible.module_utils.shell import ShellError
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
+from ansible.module_utils.network import NetworkModule
 
 
 def to_list(val):
@@ -406,7 +426,7 @@ def get_interface_mode(interface, intf_type, module):
     return mode
 
 
-def get_hsrp_groups_on_interfaces(device):
+def get_hsrp_groups_on_interfaces(device, module):
     command = 'show hsrp all'
     body = execute_show_command(command, module)
     hsrp = {}

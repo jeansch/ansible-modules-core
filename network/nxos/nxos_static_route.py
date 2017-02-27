@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_static_route
@@ -111,13 +115,10 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
-from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
-
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
+from ansible.module_utils.netcfg import NetworkConfig, ConfigLine, dumps
+from ansible.module_utils.network import NetworkModule
 
 
 def to_list(val):
@@ -155,7 +156,7 @@ class CustomNetworkConfig(NetworkConfig):
         try:
             section = self.get_section_objects(path)
             if self._device_os == 'junos':
-                return self.to_lines(section)
+                return dumps(section, output='lines')
             return self.to_block(section)
         except ValueError:
             return list()
@@ -324,7 +325,7 @@ def get_existing(module, prefix, warnings):
             group_route = match_route.groupdict()
 
             for key in key_map:
-                if key not in group_route.keys():
+                if key not in group_route:
                     group_route[key] = ''
             group_route['prefix'] = prefix
             group_route['vrf'] = module.params['vrf']
@@ -398,10 +399,10 @@ def network_from_string(address, mask, module):
 def normalize_prefix(module, prefix):
     splitted_prefix = prefix.split('/')
 
+    address = splitted_prefix[0]
     if len(splitted_prefix) > 2:
         module.fail_json(msg='Incorrect address format.', address=address)
     elif len(splitted_prefix) == 2:
-        address = splitted_prefix[0]
         mask = splitted_prefix[1]
         network = network_from_string(address, mask, module)
 

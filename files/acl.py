@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: acl
@@ -78,7 +82,7 @@ options:
     required: false
     default: null
     description:
-      - DEPRECATED. The acl to set or remove.  This must always be quoted in the form of '<etype>:<qualifier>:<perms>'.  The qualifier may be empty for some types, but the type and perms are always requried. '-' can be used as placeholder when you do not care about permissions. This is now superseded by entity, type and permissions fields.
+      - DEPRECATED. The acl to set or remove.  This must always be quoted in the form of '<etype>:<qualifier>:<perms>'.  The qualifier may be empty for some types, but the type and perms are always required. '-' can be used as placeholder when you do not care about permissions. This is now superseded by entity, type and permissions fields.
 
   recursive:
     version_added: "2.0"
@@ -97,19 +101,38 @@ notes:
 
 EXAMPLES = '''
 # Grant user Joe read access to a file
-- acl: name=/etc/foo.conf entity=joe etype=user permissions="r" state=present
+- acl:
+    name: /etc/foo.conf
+    entity: joe
+    etype: user
+    permissions: r
+    state: present
 
 # Removes the acl for Joe on a specific file
-- acl: name=/etc/foo.conf entity=joe etype=user state=absent
+- acl:
+    name: /etc/foo.conf
+    entity: joe
+    etype: user
+    state: absent
 
 # Sets default acl for joe on foo.d
-- acl: name=/etc/foo.d entity=joe etype=user permissions=rw default=yes state=present
+- acl:
+    name: /etc/foo.d
+    entity: joe
+    etype: user
+    permissions: rw
+    default: yes
+    state: present
 
 # Same as previous but using entry shorthand
-- acl: name=/etc/foo.d entry="default:user:joe:rw-" state=present
+- acl:
+    name: /etc/foo.d
+    entry: "default:user:joe:rw-"
+    state: present
 
 # Obtain the acl for a specific file
-- acl: name=/etc/foo.conf
+- acl:
+    name: /etc/foo.conf
   register: acl_info
 '''
 
@@ -202,7 +225,7 @@ def acl_changed(module, cmd):
     if get_platform().lower() == 'freebsd':
         return True
 
-    cmd = cmd[:]  # lists are mutables so cmd would be overriden without this
+    cmd = cmd[:]  # lists are mutables so cmd would be overwritten without this
     cmd.insert(1, '--test')
     lines = run_acl(module, cmd)
 
@@ -349,4 +372,5 @@ def main():
 # import module snippets
 from ansible.module_utils.basic import *
 
-main()
+if __name__ == '__main__':
+    main()

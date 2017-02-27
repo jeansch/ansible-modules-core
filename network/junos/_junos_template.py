@@ -16,6 +16,11 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['deprecated'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
+
 DOCUMENTATION = """
 ---
 module: junos_template
@@ -27,7 +32,7 @@ description:
     from a template file onto a remote device running Junos.  The
     module will return the differences in configuration if the diff
     option is specified on the Ansible command line
-deprecated: Deprecated in 2.2. Use eos_config instead
+deprecated: Deprecated in 2.2. Use junos_config instead
 extends_documentation_fragment: junos
 options:
   src:

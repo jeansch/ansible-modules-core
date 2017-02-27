@@ -16,16 +16,20 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: sros_config
 version_added: "2.2"
 author: "Peter Sprygada (@privateip)"
-short_description: Manage Nokia SROS device configuration
+short_description: Manage Nokia SR OS device configuration
 description:
-  - Nokia SROS configurations use a simple block indent file syntax
+  - Nokia SR OS configurations use a simple block indent file syntax
     for segmenting configuration into sections.  This module provides
-    an implementation for working with SROS configuration sections in
+    an implementation for working with SR OS configuration sections in
     a deterministic way.
 extends_documentation_fragment: sros
 options:
@@ -186,7 +190,7 @@ vars:
 
 - name: load config from file
     sros_config:
-      src: {{ inventory_hostname }}.cfg
+      src: "{{ inventory_hostname }}.cfg"
       provider: "{{ cli }}"
       save: yes
 """

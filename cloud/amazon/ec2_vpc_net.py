@@ -14,6 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'committer',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: ec2_vpc_net
@@ -25,7 +29,7 @@ author: Jonathan Davila (@defionscode)
 options:
   name:
     description:
-      - The name to give your VPC. This is used in combination with the cidr_block paramater to determine if a VPC already exists.
+      - The name to give your VPC. This is used in combination with the cidr_block parameter to determine if a VPC already exists.
     required: yes
   cidr_block:
     description:

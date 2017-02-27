@@ -19,6 +19,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'committer',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: azure_rm_storageblob
@@ -185,7 +189,7 @@ blob:
         "type": "BlockBlob"
     }
 container:
-    description: Facts about the current state of the selcted container.
+    description: Facts about the current state of the selected container.
     returned: always
     type: dict
     sample: {

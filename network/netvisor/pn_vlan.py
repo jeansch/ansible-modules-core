@@ -21,6 +21,10 @@
 
 import shlex
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: pn_vlan
@@ -222,8 +226,6 @@ def get_command_from_state(state):
 
 def main():
     """ This section is for arguments parsing """
-    arguement_spec = pn_arguement_spec
-
     module = AnsibleModule(
         argument_spec=dict(
             pn_cliusername=dict(required=False, type='str'),

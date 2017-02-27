@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 
@@ -28,7 +32,7 @@ extends_documentation_fragment: nxos
 author:
     - Jason Edelman (@jedelman8)
 notes:
-    - When C(state=absent), it unconfigures existing setings C(msg_time) and set it
+    - When C(state=absent), it unconfigures existing settings C(msg_time) and set it
       to its default value of 15.  It is cleaner to always use C(state=present).
     - Module will fail if the udld feature has not been previously enabled.
 options:
@@ -62,17 +66,17 @@ EXAMPLES = '''
 - nxos_udld:
     aggressive: disabled
     msg_time: 20
-    host: {{ inventory_hostname }}
-    username: {{ un }}
-    password: {{ pwd }}
+    host: "{{ inventory_hostname }}"
+    username: "{{ un }}"
+    password: "{{ pwd }}"
 
 # Ensure agg mode is globally enabled and msg time is 15
 - nxos_udld:
     aggressive: enabled
     msg_time: 15
-    host: {{ inventory_hostname }}
-    username: {{ un }}
-    password: {{ pwd }}
+    host: "{{ inventory_hostname }}"
+    username: "{{ un }}"
+    password: "{{ pwd }}"
 '''
 
 RETURN = '''

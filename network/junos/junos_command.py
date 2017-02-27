@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'core',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: junos_command
@@ -148,7 +152,7 @@ stdout_lines:
 
 failed_conditionals:
   description: the conditionals that failed
-  retured: failed
+  returned: failed
   type: list
   sample: ['...', '...']
 """

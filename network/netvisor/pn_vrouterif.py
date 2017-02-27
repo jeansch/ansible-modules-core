@@ -21,6 +21,10 @@
 
 import shlex
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: pn_vrouterif
@@ -32,7 +36,7 @@ description:
   - Execute vrouter-interface-add, vrouter-interface-remove,
     vrouter-interface-modify command.
   - You configure interfaces to vRouter services on a fabric, cluster,
-    standalone switch or virtula network(VNET).
+    standalone switch or virtual network(VNET).
 options:
   pn_cliusername:
     description:

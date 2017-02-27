@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_bgp_af
@@ -299,13 +303,12 @@ changed:
 # COMMON CODE FOR MIGRATION
 import re
 
+import ansible.module_utils.nxos
 from ansible.module_utils.basic import get_exception
 from ansible.module_utils.netcfg import NetworkConfig, ConfigLine
+from ansible.module_utils.network import NetworkModule
+from ansible.module_utils.shell import ShellError
 
-try:
-    from ansible.module_utils.nxos import get_module
-except ImportError:
-    from ansible.module_utils.nxos import NetworkModule
 
 
 def to_list(val):
@@ -890,7 +893,7 @@ def state_present(module, existing, proposed, candidate):
             commands.append('no {0}'.format(key))
 
         elif value == 'default':
-            if key in PARAM_TO_DEFAULT_KEYMAP.keys():
+            if key in PARAM_TO_DEFAULT_KEYMAP:
                 commands.append('{0} {1}'.format(key, PARAM_TO_DEFAULT_KEYMAP[key]))
 
             elif existing_commands.get(key):
@@ -959,7 +962,7 @@ def main():
             additional_paths_install=dict(required=False, type='bool'),
             additional_paths_receive=dict(required=False, type='bool'),
             additional_paths_selection=dict(required=False, type='str'),
-            additional_paths_send=dict(required=False, ype='bool'),
+            additional_paths_send=dict(required=False, type='bool'),
             advertise_l2vpn_evpn=dict(required=False, type='bool'),
             client_to_client=dict(required=False, type='bool'),
             dampen_igp_metric=dict(required=False, type='str'),

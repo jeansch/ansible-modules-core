@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_file_copy
@@ -63,7 +67,7 @@ EXAMPLES = '''
 
 RETURN = '''
 transfer_status:
-    description: Whether a file was transfered. "No Transfer" or "Sent".
+    description: Whether a file was transferred. "No Transfer" or "Sent".
     returned: success
     type: string
     sample: 'Sent'

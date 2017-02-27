@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: vyos_facts
@@ -35,7 +39,7 @@ options:
         to a given subset.  Possible values for this argument include
         all, hardware, config, and interfaces.  Can specify a list of
         values to include a larger subset.  Values can also be used
-        with an initial M(!) to specify that a specific subset should
+        with an initial C(M(!)) to specify that a specific subset should
         not be collected.
     required: false
     default: "!config"
@@ -57,7 +61,7 @@ vars:
 
 - name: collect only the config and default facts
   vyos_facts:
-    gather_subset:config
+    gather_subset: config
 
 - name: collect everything exception the config
   vyos_facts:
@@ -70,7 +74,7 @@ ansible_net_config:
   returned: when config is configured
   type: str
 ansible_net_commits:
-  descrption: The set of available configuration revisions
+  description: The set of available configuration revisions
   returned: when present
   type: list
 ansible_net_hostname:

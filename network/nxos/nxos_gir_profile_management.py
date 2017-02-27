@@ -16,6 +16,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: nxos_gir_profile
@@ -39,7 +43,7 @@ options:
         default: null
     mode:
         description:
-            - Configure the profile as Maintenance or Normale mode.
+            - Configure the profile as Maintenance or Normal mode.
         required: true
         choices: ['maintenance', 'normal']
     state:

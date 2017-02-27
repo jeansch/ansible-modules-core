@@ -20,6 +20,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: dellos10_config
@@ -123,7 +127,7 @@ options:
     choices: ['yes', 'no']
   config:
     description:
-      - The C(config) argument allows the playbook desginer to supply
+      - The C(config) argument allows the playbook designer to supply
         the base configuration to be used to validate configuration
         changes necessary.  If this argument is provided, the module
         will not download the running-config from the remote node.
